@@ -90,10 +90,10 @@
   .ev-table th{background:#F1F5F9;color:#475569;font-weight:600;padding:10px 12px;text-align:left;
     font-size:12.5px;white-space:nowrap;border:1px solid #94A3B8}
   .ev-table td{padding:9px 12px;border:1px solid #94A3B8;vertical-align:middle}
-  .ev-table .num{text-align:right;white-space:nowrap;min-width:70px}
+  .ev-table .num{text-align:right;white-space:nowrap;min-width:56px;padding-left:6px;padding-right:8px}
   .ev-table th.num{text-align:right}
   .ev-table .ev-cell{font-weight:600;color:var(--navy);min-width:130px}
-  .ev-table .sku-col{white-space:nowrap;min-width:120px}
+  .ev-table .sku-col{white-space:nowrap;min-width:96px}
   .ev-table .note-cell{font-size:12.5px;max-width:220px}
   .ev-table tr.job-start td{border-top:2px solid #475569}
   .ev-table .subtotal td{background:#EEF2F7;font-weight:700;border-top:2px solid #475569}
@@ -329,7 +329,7 @@
       </div>
       <div class="table-card">
         <div class="table-scroll">
-          <table class="ev-table" id="lockTable" style="min-width:1320px">
+          <table class="ev-table" id="lockTable" style="min-width:1120px">
             <thead><tr>
               <th style="width:50px">ลำดับ</th>
               <th class="sku-col">SKU</th>
@@ -340,10 +340,10 @@
               <th class="num">ตัวโชว์</th>
               <th class="num">ชำรุด</th>
               <th class="num">ขายออก</th>
-              <th class="num">คงเหลือหน้างาน</th>
+              <th class="num" style="white-space:normal;line-height:1.15;min-width:58px">คงเหลือ<br>หน้างาน</th>
               <th class="num">คงคลัง</th>
-              <th style="min-width:150px">หมายเหตุ</th>
-              <th style="width:120px">จัดการ</th>
+              <th style="min-width:120px">หมายเหตุ</th>
+              <th style="width:110px">จัดการ</th>
             </tr></thead>
             <tbody id="lockBody"></tbody>
             <tfoot id="lockFoot"></tfoot>
