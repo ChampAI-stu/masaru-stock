@@ -1002,7 +1002,9 @@ function renderLock(){
       <td class="num" style="color:var(--muted)">${i+1}</td>
       <td class="sku-col"><b>${it.sku?esc(it.sku):'—'}</b></td>
       <td>${it.name?esc(it.name):'<span style="color:var(--muted)">—</span>'}</td>
-      <td class="num">${it.locked_qty!=null?Number(it.locked_qty).toLocaleString():'—'}</td>
+      <td class="num">${isWh()
+        ? (it.locked_qty!=null?Number(it.locked_qty).toLocaleString():'—')
+        : `<input type="number" min="0" class="cell-input" value="${it.locked_qty!=null?it.locked_qty:''}" placeholder="0" onchange="setLocked('${it.id}', this.value)">`}</td>
       <td class="num"><input type="number" min="0" class="cell-input" value="${it.prepared_qty!=null?it.prepared_qty:''}" placeholder="${it.locked_qty!=null?it.locked_qty:0}" onchange="setPrepared('${it.id}', this.value)"></td>
       <td class="num"><span class="mv-badge mv-withdraw">${c.withdraw.toLocaleString()}</span></td>
       <td class="num"><span class="mv-badge mv-show">${c.show.toLocaleString()}</span></td>
@@ -1102,6 +1104,14 @@ $('lockItemSave').addEventListener('click', async () => {
 window.setPrepared = async function(itemId, val){
   const prepared = val==='' ? null : (parseFloat(val)||0);
   const { error } = await sb.from('stock_lock_items').update({ prepared_qty: prepared }).eq('id', itemId);
+  if(error){ toast('บันทึกไม่สำเร็จ: '+error.message); return; }
+  loadLocks();
+};
+
+// ---- แก้ "จำนวนแจ้งล็อก" ในตาราง (ผู้ประสานงาน) ----
+window.setLocked = async function(itemId, val){
+  const locked = val==='' ? null : (parseFloat(val)||0);
+  const { error } = await sb.from('stock_lock_items').update({ locked_qty: locked }).eq('id', itemId);
   if(error){ toast('บันทึกไม่สำเร็จ: '+error.message); return; }
   loadLocks();
 };
