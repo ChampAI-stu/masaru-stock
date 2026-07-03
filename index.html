@@ -430,6 +430,7 @@
     <div class="modal-head"><h2 id="moveTitle">ความเคลื่อนไหว</h2><button class="modal-close" id="moveClose">&times;</button></div>
     <input type="hidden" id="moveItemId">
     <div id="moveSummary" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"></div>
+    <div id="moveAddSection">
     <div class="sec-label">บันทึกความเคลื่อนไหวใหม่</div>
     <div class="m-row" style="grid-template-columns:1.1fr 1.2fr .9fr">
       <div class="m-field"><label>ประเภท</label>
@@ -438,6 +439,7 @@
       <div class="m-field"><label>จำนวน</label><input type="number" id="mvQty" min="0" placeholder="0"></div>
     </div>
     <button class="add-line-btn" id="mvAddBtn">+ บันทึกความเคลื่อนไหว</button>
+    </div>
     <div class="sec-label">รายการที่บันทึกไว้</div>
     <div id="moveList" style="max-height:230px;overflow:auto"></div>
     <div class="modal-foot"><button class="btn-save" id="moveDone" style="flex:1">เสร็จสิ้น</button></div>
@@ -542,6 +544,7 @@ const COMPANY_AUTH_CODE = 'MasaruStock';   // role stock (แยกจาก Pur
 let allJobs = [];        // [{...job, items:[...]}]
 let currentEmail = '';
 let currentRole = null;  // role ของผู้ใช้ปัจจุบัน (เฉพาะแอปนี้)
+const isWh = () => currentRole === 'warehouse';   // โกดัง = แก้ได้เฉพาะช่อง "คลังแก้ได้"
 let rolesMap = {};       // { email: {role, display_name} }
 const $ = id => document.getElementById(id);
 
@@ -658,6 +661,11 @@ async function enterApp(session){
   $('userPill').textContent = rolePillText(me, currentEmail);
   $('loginScreen').style.display='none';
   $('app').style.display='block';
+  // 🔒 โกดัง (warehouse) แก้ได้เฉพาะช่อง "คลังแก้ได้" — ซ่อนปุ่มที่ทำไม่ได้
+  if(currentRole === 'warehouse'){
+    ['skuAddBtn','skuImportBtn','lockAddRoundBtn','lockDelRoundBtn','lockAddItemBtn','wdPullBtn','wdAddBtn']
+      .forEach(id => { const el = $(id); if(el) el.style.display = 'none'; });
+  }
   loadJobs();
   loadSkus();
   loadLocks();
@@ -729,13 +737,21 @@ function renderSkus(){
     tb.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--muted)">
       ${q?'ไม่พบ SKU ที่ค้นหา':'ยังไม่มี SKU — กด "เพิ่ม SKU" หรือ "นำเข้า Excel"'}</td></tr>`;
   } else {
-    tb.innerHTML = rows.map((s,i) => `<tr>
-      <td class="num" style="color:var(--muted)">${i+1}</td>
-      <td class="sku-col"><input type="text" class="cell-input" style="width:120px;text-align:left;font-weight:700" value="${s.sku?esc(s.sku):''}" onchange="setSkuField('${s.id}','sku',this.value)"></td>
-      <td><input type="text" class="cell-input" style="width:100%;text-align:left" value="${s.name?esc(s.name):''}" placeholder="ชื่อสินค้า" onchange="setSkuField('${s.id}','name',this.value)"></td>
-      <td class="num"><input type="number" min="0" step="0.01" class="cell-input" value="${s.price!=null?s.price:''}" placeholder="0" onchange="setSkuField('${s.id}','price',this.value)"></td>
-      <td><button class="act-btn act-del" onclick="delSku('${s.id}')">🗑️</button></td>
-    </tr>`).join('');
+    tb.innerHTML = rows.map((s,i) => isWh()
+      ? `<tr>
+        <td class="num" style="color:var(--muted)">${i+1}</td>
+        <td class="sku-col"><b>${s.sku?esc(s.sku):'—'}</b></td>
+        <td>${s.name?esc(s.name):'<span style="color:var(--muted)">—</span>'}</td>
+        <td class="num">${s.price!=null?'<span class="sku-price">'+Number(s.price).toLocaleString()+'</span>':'—'}</td>
+        <td><span style="color:var(--muted);font-size:12px">ดูอย่างเดียว</span></td>
+      </tr>`
+      : `<tr>
+        <td class="num" style="color:var(--muted)">${i+1}</td>
+        <td class="sku-col"><input type="text" class="cell-input" style="width:120px;text-align:left;font-weight:700" value="${s.sku?esc(s.sku):''}" onchange="setSkuField('${s.id}','sku',this.value)"></td>
+        <td><input type="text" class="cell-input" style="width:100%;text-align:left" value="${s.name?esc(s.name):''}" placeholder="ชื่อสินค้า" onchange="setSkuField('${s.id}','name',this.value)"></td>
+        <td class="num"><input type="number" min="0" step="0.01" class="cell-input" value="${s.price!=null?s.price:''}" placeholder="0" onchange="setSkuField('${s.id}','price',this.value)"></td>
+        <td><button class="act-btn act-del" onclick="delSku('${s.id}')">🗑️</button></td>
+      </tr>`).join('');
   }
   $('skuCount').textContent = `${rows.length.toLocaleString()} SKU${q?` (จากทั้งหมด ${allSkus.length.toLocaleString()})`:''}`;
 }
@@ -995,8 +1011,8 @@ function renderLock(){
       <td class="num calc-onsite">${c.onsite.toLocaleString()}</td>
       <td class="num calc-instock">${c.instock.toLocaleString()}</td>
       <td><div style="display:flex;gap:6px">
-        <button class="act-btn" onclick="openMoves('${it.id}')" title="บันทึกความเคลื่อนไหว">📊</button>
-        <button class="act-btn act-del" onclick="delLockItem('${it.id}')" title="ลบออกจากรอบ">🗑️</button>
+        <button class="act-btn" onclick="openMoves('${it.id}')" title="${isWh()?'ดูความเคลื่อนไหว':'บันทึกความเคลื่อนไหว'}">📊</button>
+        ${isWh()?'':`<button class="act-btn act-del" onclick="delLockItem('${it.id}')" title="ลบออกจากรอบ">🗑️</button>`}
       </div></td>
     </tr>`;
   }).join('');
@@ -1110,6 +1126,7 @@ window.openMoves = function(itemId){
   $('moveItemId').value = itemId;
   $('moveTitle').textContent = `ความเคลื่อนไหว — ${it.sku||''}`;
   $('mvType').value='เบิก'; $('mvDate').value = ymd(new Date()); $('mvQty').value='';
+  $('moveAddSection').style.display = isWh() ? 'none' : 'block';
   renderMoves();
   $('moveBg').style.display='flex';
 };
@@ -1128,7 +1145,7 @@ function renderMoves(){
     <span class="mv-badge mv-${MOVE_KEY[m.move_type]||''}">${esc(m.move_type)}</span>
     <span style="flex:1;color:var(--muted)">${m.move_date?fmtDate(m.move_date):'—'}</span>
     <b>${Number(m.qty||0).toLocaleString()}</b>
-    <button class="act-btn act-del" onclick="delMove('${m.id}')">🗑️</button>
+    ${isWh()?'':`<button class="act-btn act-del" onclick="delMove('${m.id}')">🗑️</button>`}
   </div>`).join('') : '<div style="color:var(--muted);font-size:13px;padding:8px">ยังไม่มีความเคลื่อนไหว</div>';
 }
 
@@ -1207,6 +1224,8 @@ function renderWd(){
     return;
   }
   const numInput = (id,field,v) => `<input type="number" min="0" class="cell-input" value="${v!=null?v:''}" onchange="setWd('${id}','${field}',this.value)">`;
+  const numView  = v => `<span style="color:var(--text)">${v!=null?Number(v).toLocaleString():'—'}</span>`;
+  const wh = isWh();
   tb.innerHTML = rows.map((w,i) => {
     const diff = (w.counted!=null && w.requested!=null && Number(w.counted)!==Number(w.requested));
     const countStyle = diff ? 'background:var(--red-bg)' : '';
@@ -1215,12 +1234,12 @@ function renderWd(){
       <td class="num" style="color:var(--muted)">${i+1}</td>
       <td class="sku-col"><b>${w.sku?esc(w.sku):'—'}</b></td>
       <td>${w.name?esc(w.name):'<span style="color:var(--muted)">—</span>'}</td>
-      <td class="num">${numInput(w.id,'requested',w.requested)}</td>
+      <td class="num">${wh ? numView(w.requested) : numInput(w.id,'requested',w.requested)}</td>
       <td class="num">${numInput(w.id,'prepared',w.prepared)}</td>
-      <td class="num" style="${countStyle}">${numInput(w.id,'counted',w.counted)}</td>
+      <td class="num" style="${countStyle}">${wh ? numView(w.counted) : numInput(w.id,'counted',w.counted)}</td>
       <td><input type="text" class="cell-input" style="width:100%;text-align:left" value="${w.note?esc(w.note):''}" placeholder="หมายเหตุ" onchange="setWd('${w.id}','note',this.value)"></td>
       <td style="font-size:12px">${who}</td>
-      <td><button class="act-btn act-del" onclick="delWd('${w.id}')">🗑️</button></td>
+      <td>${wh?'':`<button class="act-btn act-del" onclick="delWd('${w.id}')">🗑️</button>`}</td>
     </tr>`;
   }).join('');
 }
