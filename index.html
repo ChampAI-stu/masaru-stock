@@ -342,6 +342,7 @@
               <th class="num">ขายออก</th>
               <th class="num">คงเหลือหน้างาน</th>
               <th class="num">คงคลัง</th>
+              <th style="min-width:150px">หมายเหตุ</th>
               <th style="width:120px">จัดการ</th>
             </tr></thead>
             <tbody id="lockBody"></tbody>
@@ -420,6 +421,7 @@
       <div class="m-field"><label>จำนวนแจ้งล็อก</label><input type="number" id="leLocked" min="0" placeholder="0"></div>
       <div class="m-field"><label>คลังเตรียม</label><input type="number" id="lePrepared" min="0" placeholder="0"></div>
     </div>
+    <div class="m-field"><label>หมายเหตุ</label><input type="text" id="leNote" placeholder="หมายเหตุ (ถ้ามี)"></div>
     <div class="modal-foot"><button class="btn-cancel" id="lockEditCancel">ยกเลิก</button><button class="btn-save" id="lockEditSave">บันทึก</button></div>
   </div>
 </div>
@@ -1049,14 +1051,14 @@ function renderLock(){
   const q = $('lockSearch').value.toLowerCase().trim();
   const tb = $('lockBody'), ft = $('lockFoot');
   if(!currentLockId){
-    tb.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:40px;color:var(--muted)">
+    tb.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:40px;color:var(--muted)">
       ยังไม่มีรอบงาน — กด "+ รอบใหม่" เพื่อเริ่ม</td></tr>`;
     ft.innerHTML = ''; return;
   }
   let items = allLockItems.filter(it => it.lock_id===currentLockId);
   if(q) items = items.filter(it => (it.sku||'').toLowerCase().includes(q) || (it.name||'').toLowerCase().includes(q));
   if(items.length === 0){
-    tb.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:40px;color:var(--muted)">
+    tb.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:40px;color:var(--muted)">
       ${q?'ไม่พบ SKU ที่ค้นหา':'ยังไม่มี SKU ในรอบนี้ — กด "+ เพิ่ม SKU เข้ารอบ"'}</td></tr>`;
     ft.innerHTML = ''; return;
   }
@@ -1089,6 +1091,7 @@ function renderLock(){
       <td class="num"><span class="mv-badge mv-sold">${c.sold.toLocaleString()}</span></td>
       <td class="num calc-onsite">${c.onsite.toLocaleString()}</td>
       <td class="num calc-instock">${c.instock.toLocaleString()}</td>
+      <td>${it.note?esc(it.note):'<span style="color:var(--muted)">—</span>'}</td>
       <td><div style="display:flex;gap:6px">
         <button class="act-btn" onclick="openEditLock('${it.id}')" title="แก้ไขตัวเลข">✏️</button>
         <button class="act-btn" onclick="openMoves('${it.id}')" title="${isWh()?'ดูความเคลื่อนไหว':'บันทึกความเคลื่อนไหว'}">📊</button>
@@ -1100,7 +1103,7 @@ function renderLock(){
   const showHeads = groups.length > 1 || (groups[0] && groups[0].cat !== 'ไม่ระบุหมวดหมู่');
   let n = 0, html = '';
   groups.forEach(g => {
-    if(showHeads) html += `<tr class="cat-head"><td colspan="12">📂 ${esc(g.cat)} · ${g.items.length} รายการ</td></tr>`;
+    if(showHeads) html += `<tr class="cat-head"><td colspan="13">📂 ${esc(g.cat)} · ${g.items.length} รายการ</td></tr>`;
     g.items.forEach(it => { html += rowHtml(it, ++n); });
   });
   tb.innerHTML = html;
@@ -1114,7 +1117,7 @@ function renderLock(){
     <td class="num">${sum.sold.toLocaleString()}</td>
     <td class="num calc-onsite">${sum.onsite.toLocaleString()}</td>
     <td class="num calc-instock">${sum.instock.toLocaleString()}</td>
-    <td></td></tr>`;
+    <td></td><td></td></tr>`;
 }
 
 $('lockRoundSel').addEventListener('change', e => { currentLockId = e.target.value; renderLock(); });
@@ -1226,6 +1229,7 @@ window.openEditLock = function(id){
   $('lockEditTitle').textContent = 'แก้ไข — ' + (it.sku||'');
   $('leLocked').value = it.locked_qty!=null ? it.locked_qty : '';
   $('lePrepared').value = it.prepared_qty!=null ? it.prepared_qty : '';
+  $('leNote').value = it.note || '';
   const wh = isWh();                 // โกดังแก้ได้เฉพาะคลังเตรียม
   $('leLocked').disabled = wh;
   $('leLocked').style.opacity = wh ? '.45' : '1';
@@ -1234,7 +1238,7 @@ window.openEditLock = function(id){
 async function saveEditLock(){
   const id = $('leId').value;
   const num = v => v==='' ? null : (parseFloat(v)||0);
-  const payload = { prepared_qty: num($('lePrepared').value) };
+  const payload = { prepared_qty: num($('lePrepared').value), note: $('leNote').value.trim() || null };
   if(!isWh()) payload.locked_qty = num($('leLocked').value);
   $('lockEditSave').disabled=true;
   const { error } = await sb.from('stock_lock_items').update(payload).eq('id', id);
