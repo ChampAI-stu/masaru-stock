@@ -182,6 +182,8 @@
   .calc-instock{color:var(--green);font-weight:700}
   .lock-foot td{background:#EEF2F7;font-weight:700;border-top:2px solid #475569}
   .mv-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;font-size:13px}
+  .cat-tag{display:inline-block;font-size:12px;padding:2px 10px;border-radius:20px;background:var(--navy-bg,#EEF2F7);color:var(--navy);font-weight:600}
+  .cat-head td{background:#1F3864;color:#fff;font-weight:700;font-size:13px;padding:8px 14px;letter-spacing:.3px}
 </style>
 </head>
 <body>
@@ -302,6 +304,7 @@
               <th style="width:64px">ลำดับ</th>
               <th class="sku-col">SKU / COMBOSET</th>
               <th class="ev-cell">ชื่อสินค้า</th>
+              <th style="width:150px">หมวดหมู่</th>
               <th class="num">ราคาขายหน้างาน</th>
               <th style="width:96px">จัดการ</th>
             </tr></thead>
@@ -486,6 +489,7 @@
     <input type="hidden" id="skuEditId">
     <div class="m-field"><label>SKU / COMBOSET</label><input type="text" id="skField" placeholder="เช่น SCM-500N"></div>
     <div class="m-field"><label>ชื่อสินค้า</label><input type="text" id="skName" placeholder="เช่น เครื่องตัดหญ้าไร้สาย 20V"></div>
+    <div class="m-field"><label>หมวดหมู่</label><input type="text" id="skCat" list="skuCatList" placeholder="เช่น สินค้าหลัก / อะไหล่"><datalist id="skuCatList"></datalist></div>
     <div class="m-field"><label>ราคาขายหน้างาน (บาท)</label><input type="number" id="skPrice" min="0" step="0.01" placeholder="0"></div>
     <div class="modal-foot">
       <button class="btn-cancel" id="skuModalCancel">ยกเลิก</button>
@@ -514,7 +518,7 @@
       <div style="font-weight:600;color:var(--navy);margin-bottom:8px">ตัวอย่าง (<span id="skuImportCount">0</span> รายการ)</div>
       <div style="max-height:240px;overflow:auto;border:1px solid var(--line);border-radius:9px">
         <table class="ev-table" style="min-width:auto"><thead><tr>
-          <th>SKU</th><th>ชื่อสินค้า</th><th class="num">ราคา</th>
+          <th>SKU</th><th>ชื่อสินค้า</th><th>หมวดหมู่</th><th class="num">ราคา</th>
         </tr></thead><tbody id="skuImportBody"></tbody></table>
       </div>
     </div>
@@ -761,14 +765,16 @@ function renderSkus(){
   const q = $('skuSearch').value.toLowerCase().trim();
   const rows = allSkus.filter(s => !q
     || (s.sku||'').toLowerCase().includes(q)
-    || (s.name||'').toLowerCase().includes(q));
+    || (s.name||'').toLowerCase().includes(q)
+    || (s.category||'').toLowerCase().includes(q));
   const tb = $('skuBody');
   if(rows.length === 0){
-    tb.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--muted)">
+    tb.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--muted)">
       ${q?'ไม่พบ SKU ที่ค้นหา':'ยังไม่มี SKU — กด "เพิ่ม SKU" หรือ "นำเข้า Excel"'}</td></tr>`;
   } else {
     tb.innerHTML = rows.map((s,i) => {
       const priceCell = s.price!=null?'<span class="sku-price">'+Number(s.price).toLocaleString()+'</span>':'—';
+      const catCell = s.category ? `<span class="cat-tag">${esc(s.category)}</span>` : '<span style="color:var(--muted)">—</span>';
       const actions = isWh()
         ? '<span style="color:var(--muted);font-size:12px">ดูอย่างเดียว</span>'
         : `<div style="display:flex;gap:6px">
@@ -779,6 +785,7 @@ function renderSkus(){
         <td class="num" style="color:var(--muted)">${i+1}</td>
         <td class="sku-col"><b>${s.sku?esc(s.sku):'—'}</b></td>
         <td>${s.name?esc(s.name):'<span style="color:var(--muted)">—</span>'}</td>
+        <td>${catCell}</td>
         <td class="num">${priceCell}</td>
         <td>${actions}</td>
       </tr>`;
@@ -814,16 +821,23 @@ $('skuModalCancel').addEventListener('click', closeSkuModal);
 $('skuBg').addEventListener('click', e => { if(e.target===$('skuBg')) closeSkuModal(); });
 $('skuModalSave').addEventListener('click', saveSku);
 
+function fillCatList(){
+  const cats = [...new Set(allSkus.map(s=>s.category).filter(Boolean))].sort();
+  $('skuCatList').innerHTML = cats.map(c=>`<option value="${esc(c)}">`).join('');
+}
 function openAddSku(){
   $('skuModalTitle').textContent = 'เพิ่ม SKU';
-  $('skuEditId').value=''; $('skField').value=''; $('skName').value=''; $('skPrice').value='';
+  $('skuEditId').value=''; $('skField').value=''; $('skName').value=''; $('skCat').value=''; $('skPrice').value='';
+  fillCatList();
   $('skuBg').style.display='flex';
 }
 window.openEditSku = function(id){
   const s = allSkus.find(x=>x.id===id); if(!s) return;
   $('skuModalTitle').textContent = 'แก้ไข SKU';
   $('skuEditId').value=s.id; $('skField').value=s.sku||''; $('skName').value=s.name||'';
+  $('skCat').value=s.category||'';
   $('skPrice').value=(s.price!=null)?s.price:'';
+  fillCatList();
   $('skuBg').style.display='flex';
 };
 function closeSkuModal(){ $('skuBg').style.display='none'; }
@@ -835,6 +849,7 @@ async function saveSku(){
   if(!sku){ toast('กรุณากรอก SKU'); return; }
   const payload = {
     sku, name: name || null,
+    category: $('skCat').value.trim() || null,
     price: priceVal==='' ? null : (parseFloat(priceVal)||0),
     updated_at: new Date().toISOString()
   };
@@ -916,29 +931,35 @@ function handleSkuFile(e){
       if(headerIdx < 0){ toast('ไม่พบคอลัมน์ SKU/รหัสสินค้า — โหลดเทมเพลตไปใช้'); return; }
       skuImportRecords = [];
       const seen = {};   // dedupe ในไฟล์ (SKU ซ้ำ เก็บตัวท้าย)
-      let skippedCat = 0;
+      let skippedCat = 0, curCat = null;
       for(let i=headerIdx+1; i<rows.length; i++){
         const r = rows[i];
         const c0 = String(r[0]||'').trim();
-        if(c0.includes('หมวดหมู่')){ skippedCat++; continue; }   // ข้ามป้ายหมวดหมู่
+        if(c0.includes('หมวดหมู่')){   // ป้ายหมวดหมู่ → จำไว้ใช้กับรายการถัดไป
+          const label = String(r[1]||'').trim() || c0.replace(/หมวดหมู่/,'').replace(/[：:]/g,'').trim();
+          curCat = label || null;
+          skippedCat++; continue;
+        }
         const sku = String(r[ci.sku]||'').trim();
         if(!sku || sku==='รหัสสินค้า' || sku.toUpperCase()==='SKU') continue;   // ข้ามว่าง/หัวตารางซ้ำ
         const priceRaw = ci.price>=0 ? r[ci.price] : '';
         const rec = {
           sku,
           name: ci.name>=0 ? (String(r[ci.name]||'').trim()||null) : null,
+          category: curCat,
           price: (priceRaw==='' || priceRaw==null) ? null : (parseFloat(priceRaw)||0)
         };
         if(seen[sku]!=null) skuImportRecords[seen[sku]] = rec;   // ทับตัวเดิม
         else { seen[sku] = skuImportRecords.length; skuImportRecords.push(rec); }
       }
       if(skuImportRecords.length === 0){ toast('ไม่พบรายการที่มี SKU'); return; }
-      if(skippedCat > 0) toast(`อ่านสำเร็จ (ข้ามป้ายหมวดหมู่ ${skippedCat} แถว)`);
+      if(skippedCat > 0) toast(`อ่านสำเร็จ (แยก ${skippedCat} หมวดหมู่)`);
       $('skuImportCount').textContent = skuImportRecords.length;
       $('skuImportBody').innerHTML = skuImportRecords.slice(0,50).map(r => `<tr>
         <td><b>${esc(r.sku)}</b></td><td>${esc(r.name||'—')}</td>
+        <td>${r.category?esc(r.category):'—'}</td>
         <td class="num">${r.price!=null?Number(r.price).toLocaleString():'—'}</td></tr>`).join('')
-        + (skuImportRecords.length>50 ? `<tr><td colspan="3" style="text-align:center;color:var(--muted)">…และอีก ${skuImportRecords.length-50} รายการ</td></tr>` : '');
+        + (skuImportRecords.length>50 ? `<tr><td colspan="4" style="text-align:center;color:var(--muted)">…และอีก ${skuImportRecords.length-50} รายการ</td></tr>` : '');
       $('skuImportPreview').style.display='block';
       $('skuImportConfirm').disabled=false; $('skuImportConfirm').style.opacity='1';
     } catch(err){ console.error(err); toast('อ่านไฟล์ไม่สำเร็จ: '+err.message); }
@@ -955,7 +976,7 @@ async function confirmSkuImport(){
   const existing = {};
   allSkus.forEach(s => { existing[s.sku] = s.seq; });
   const payload = skuImportRecords.map((r,idx) => ({
-    sku: r.sku, name: r.name, price: r.price,
+    sku: r.sku, name: r.name, price: r.price, category: r.category,
     seq: existing[r.sku] != null ? existing[r.sku] : (++baseSeq),
     updated_at: now
   }));
@@ -1024,13 +1045,24 @@ function renderLock(){
     ft.innerHTML = ''; return;
   }
   const sum = { locked:0, prepared:0, withdraw:0, show:0, damage:0, sold:0, onsite:0, instock:0 };
-  tb.innerHTML = items.map((it,i) => {
+  // แผนที่ sku -> หมวดหมู่ (จากฐานข้อมูลกลาง)
+  const catOf = {};
+  allSkus.forEach(s => { if(s.sku) catOf[s.sku] = s.category || ''; });
+  // จัดกลุ่มตามหมวดหมู่ (คงลำดับการปรากฏ)
+  const groups = [];   // [{cat, items:[]}]
+  const gmap = {};
+  items.forEach(it => {
+    const cat = catOf[it.sku] || 'ไม่ระบุหมวดหมู่';
+    if(gmap[cat]==null){ gmap[cat] = groups.length; groups.push({ cat, items:[] }); }
+    groups[gmap[cat]].items.push(it);
+  });
+  const rowHtml = (it, idx) => {
     const c = calcItem(it);
     sum.locked += Number(it.locked_qty||0); sum.prepared += c.prepared;
     sum.withdraw += c.withdraw; sum.show += c.show; sum.damage += c.damage; sum.sold += c.sold;
     sum.onsite += c.onsite; sum.instock += c.instock;
     return `<tr>
-      <td class="num" style="color:var(--muted)">${i+1}</td>
+      <td class="num" style="color:var(--muted)">${idx}</td>
       <td class="sku-col"><b>${it.sku?esc(it.sku):'—'}</b></td>
       <td>${it.name?esc(it.name):'<span style="color:var(--muted)">—</span>'}</td>
       <td class="num">${it.locked_qty!=null?Number(it.locked_qty).toLocaleString():'—'}</td>
@@ -1047,7 +1079,15 @@ function renderLock(){
         ${isWh()?'':`<button class="act-btn act-del" onclick="delLockItem('${it.id}')" title="ลบออกจากรอบ">🗑️</button>`}
       </div></td>
     </tr>`;
-  }).join('');
+  };
+  // ถ้ามีหมวดเดียว (ไม่ระบุ) ก็ไม่ต้องโชว์หัวหมวด
+  const showHeads = groups.length > 1 || (groups[0] && groups[0].cat !== 'ไม่ระบุหมวดหมู่');
+  let n = 0, html = '';
+  groups.forEach(g => {
+    if(showHeads) html += `<tr class="cat-head"><td colspan="12">📂 ${esc(g.cat)} · ${g.items.length} รายการ</td></tr>`;
+    g.items.forEach(it => { html += rowHtml(it, ++n); });
+  });
+  tb.innerHTML = html;
   ft.innerHTML = `<tr class="lock-foot">
     <td colspan="3" style="text-align:right">รวม</td>
     <td class="num">${sum.locked.toLocaleString()}</td>
@@ -1113,6 +1153,9 @@ $('liSku').addEventListener('input', () => {
 $('lockItemSave').addEventListener('click', async () => {
   const sku = $('liSku').value.trim();
   if(!sku){ toast('กรุณาเลือก SKU'); return; }
+  // กัน SKU ซ้ำในรอบเดียวกัน
+  const dup = allLockItems.some(it => it.lock_id===currentLockId && (it.sku||'').toLowerCase()===sku.toLowerCase());
+  if(dup){ toast(`SKU "${sku}" มีอยู่ในรอบนี้แล้ว — ไปแก้ตัวเลขที่รายการเดิมได้เลย`); return; }
   const lockedRaw = $('liLocked').value, prepRaw = $('liPrepared').value;
   const locked = lockedRaw==='' ? null : (parseFloat(lockedRaw)||0);
   const nextSeq = allLockItems.filter(it=>it.lock_id===currentLockId).reduce((mx,it)=>Math.max(mx,it.seq||0),0)+1;
