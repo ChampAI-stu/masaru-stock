@@ -731,18 +731,34 @@ function renderSkus(){
   } else {
     tb.innerHTML = rows.map((s,i) => `<tr>
       <td class="num" style="color:var(--muted)">${i+1}</td>
-      <td class="sku-col"><b>${s.sku?esc(s.sku):'—'}</b></td>
-      <td>${s.name?esc(s.name):'<span style="color:var(--muted)">—</span>'}</td>
-      <td class="num">${s.price!=null?'<span class="sku-price">'+Number(s.price).toLocaleString()+'</span>':'—'}</td>
-      <td><div style="display:flex;gap:6px">
-        <button class="act-btn" onclick="openEditSku('${s.id}')">✏️</button>
-        <button class="act-btn act-del" onclick="delSku('${s.id}')">🗑️</button>
-      </div></td>
+      <td class="sku-col"><input type="text" class="cell-input" style="width:120px;text-align:left;font-weight:700" value="${s.sku?esc(s.sku):''}" onchange="setSkuField('${s.id}','sku',this.value)"></td>
+      <td><input type="text" class="cell-input" style="width:100%;text-align:left" value="${s.name?esc(s.name):''}" placeholder="ชื่อสินค้า" onchange="setSkuField('${s.id}','name',this.value)"></td>
+      <td class="num"><input type="number" min="0" step="0.01" class="cell-input" value="${s.price!=null?s.price:''}" placeholder="0" onchange="setSkuField('${s.id}','price',this.value)"></td>
+      <td><button class="act-btn act-del" onclick="delSku('${s.id}')">🗑️</button></td>
     </tr>`).join('');
   }
   $('skuCount').textContent = `${rows.length.toLocaleString()} SKU${q?` (จากทั้งหมด ${allSkus.length.toLocaleString()})`:''}`;
 }
 $('skuSearch').addEventListener('input', renderSkus);
+
+// ---- แก้ไขในตารางได้เลย (รหัส/ชื่อ/ราคา) ----
+window.setSkuField = async function(id, field, val){
+  const payload = { updated_at: new Date().toISOString() };
+  if(field==='price'){
+    payload.price = val==='' ? null : (parseFloat(val)||0);
+  } else {
+    const v = val.trim();
+    if(field==='sku' && !v){ toast('รหัส SKU ห้ามว่าง'); loadSkus(); return; }
+    payload[field] = v || null;
+  }
+  const { error } = await sb.from('sku_master').update(payload).eq('id', id);
+  if(error){
+    toast(/duplicate|23505/i.test(error.message) ? 'รหัส SKU นี้ซ้ำกับที่มีอยู่แล้ว' : 'บันทึกไม่สำเร็จ: '+error.message);
+    loadSkus();   // คืนค่าเดิม
+    return;
+  }
+  loadSkus();
+};
 
 // ---- เพิ่ม/แก้ไข SKU ----
 $('skuAddBtn').addEventListener('click', openAddSku);
