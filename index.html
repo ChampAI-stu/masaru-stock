@@ -323,6 +323,7 @@
       <div class="toolbar">
         <select class="filter-sel" id="lockRoundSel" style="min-width:220px"><option value="">— เลือกรอบงาน —</option></select>
         <button class="add-btn" id="lockAddRoundBtn" style="background:#2E75B6">+ รอบใหม่</button>
+        <button class="add-btn" id="lockEditRoundBtn" style="background:#fff;color:var(--navy);border:1px solid var(--navy)">✏️ แก้รอบ</button>
         <button class="add-btn" id="lockDelRoundBtn" style="background:#fff;color:var(--red);border:1px solid var(--red)">🗑️ ลบรอบ</button>
         <div class="search-wrap" style="min-width:170px"><span class="search-ico">🔍</span><input type="text" id="lockSearch" placeholder="ค้นหา SKU..."></div>
         <button class="add-btn" id="lockAddItemBtn">+ เพิ่ม SKU เข้ารอบ</button>
@@ -360,33 +361,38 @@
   <div id="viewWd" style="display:none">
     <div class="container">
       <div class="toolbar">
-        <select class="filter-sel" id="wdRoundSel" style="min-width:200px"><option value="">— เลือกรอบงาน —</option></select>
-        <input type="date" class="filter-sel" id="wdDate" title="วันที่เบิก">
+        <select class="filter-sel" id="wdRoundSel" style="min-width:220px"><option value="">— เลือกรอบงาน —</option></select>
+        <select class="filter-sel" id="wdDaySel" style="min-width:150px"><option value="">— เลือกวัน —</option></select>
         <button class="add-btn" id="wdPullBtn" style="background:#2E75B6">⬇ ดึง SKU จากรอบ</button>
         <button class="add-btn" id="wdAddBtn">+ เพิ่ม SKU</button>
+        <button class="add-btn" id="wdSummaryBtn" style="background:#6C4AB6">📊 สรุปรวมทุกวัน</button>
         <div class="search-wrap" style="min-width:150px"><span class="search-ico">🔍</span><input type="text" id="wdSearch" placeholder="ค้นหา SKU..."></div>
       </div>
       <div id="wdChips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px"></div>
       <div class="table-card">
         <div class="table-scroll">
-          <table class="ev-table" style="min-width:920px">
+          <table class="ev-table" style="min-width:1200px">
             <thead><tr>
               <th style="width:50px">ลำดับ</th>
               <th class="sku-col">SKU</th>
               <th class="ev-cell">ชื่อสินค้า</th>
               <th class="num">เบิก</th>
+              <th class="num">ตัวโชว์</th>
+              <th class="num">ชำรุด</th>
+              <th class="num">ขายออก</th>
+              <th class="num" style="white-space:normal;line-height:1.15;min-width:58px">คงเหลือ<br>หน้างาน</th>
               <th class="num">คลังเตรียม</th>
               <th class="num">นับจริง</th>
-              <th style="min-width:160px">หมายเหตุ</th>
-              <th>ผู้แก้ไขล่าสุด</th>
-              <th style="width:46px"></th>
+              <th style="min-width:120px">หมายเหตุ</th>
+              <th>ผู้แก้ไข</th>
+              <th style="width:80px">จัดการ</th>
             </tr></thead>
             <tbody id="wdBody"></tbody>
           </table>
         </div>
       </div>
       <div style="font-size:12px;color:var(--muted);margin-top:8px">
-        💡 กรอกเทียบ 3 ฝั่ง: ออฟฟิศ=เบิก · คลัง=คลังเตรียม+หมายเหตุ · หน้างาน=นับจริง — ถ้า "นับจริง" ต่างจาก "เบิก" ช่องจะไฮไลต์แดง · ระบบขึ้นชื่อผู้แก้ไขทุกช่อง
+        💡 บันทึกรายวัน: เบิก/ตัวโชว์/ชำรุด/ขายออก · คงเหลือหน้างาน = เบิก − ขายออก − ชำรุด − ตัวโชว์ · คลัง=คลังเตรียม+หมายเหตุ · กด "สรุปรวมทุกวัน" เพื่อรวมยอดทั้งงาน แล้วซิงไปหน้าล็อกสต๊อกได้
       </div>
     </div>
   </div>
@@ -405,10 +411,15 @@
 </div>
 <div class="modal-bg" id="roundBg">
   <div class="modal">
-    <div class="modal-head"><h2>เพิ่มรอบงานใหม่</h2><button class="modal-close" id="roundClose">&times;</button></div>
-    <div class="m-field"><label>ชื่อรอบ / งาน</label><input type="text" id="rdName" placeholder="เช่น งานบ้านและสวน ส.ค. 69"></div>
+    <div class="modal-head"><h2 id="roundTitle">เพิ่มรอบงานใหม่</h2><button class="modal-close" id="roundClose">&times;</button></div>
+    <input type="hidden" id="rdId">
+    <div class="m-field"><label>ชื่องาน / รอบ</label><input type="text" id="rdName" placeholder="เช่น งานบ้านและสวน ไบเทค บางนา"></div>
+    <div class="m-row">
+      <div class="m-field"><label>วันเริ่มงาน</label><input type="date" id="rdStart"></div>
+      <div class="m-field"><label>วันจบงาน</label><input type="date" id="rdEnd"></div>
+    </div>
     <div class="m-field"><label>หมายเหตุ</label><textarea id="rdNote" placeholder="ข้อมูลเพิ่มเติม (ถ้ามี)"></textarea></div>
-    <div class="modal-foot"><button class="btn-cancel" id="roundCancel">ยกเลิก</button><button class="btn-save" id="roundSave">สร้างรอบ</button></div>
+    <div class="modal-foot"><button class="btn-cancel" id="roundCancel">ยกเลิก</button><button class="btn-save" id="roundSave">บันทึก</button></div>
   </div>
 </div>
 
@@ -433,13 +444,37 @@
     <input type="hidden" id="weId">
     <div class="m-row">
       <div class="m-field"><label>เบิก</label><input type="number" id="weReq" min="0" placeholder="0"></div>
-      <div class="m-field"><label>คลังเตรียม</label><input type="number" id="wePrep" min="0" placeholder="0"></div>
+      <div class="m-field"><label>ตัวโชว์</label><input type="number" id="weShow" min="0" placeholder="0"></div>
     </div>
     <div class="m-row">
-      <div class="m-field"><label>นับจริง</label><input type="number" id="weCount" min="0" placeholder="0"></div>
-      <div class="m-field"><label>หมายเหตุ</label><input type="text" id="weNote" placeholder="หมายเหตุ"></div>
+      <div class="m-field"><label>ชำรุด</label><input type="number" id="weDamage" min="0" placeholder="0"></div>
+      <div class="m-field"><label>ขายออก</label><input type="number" id="weSold" min="0" placeholder="0"></div>
     </div>
+    <div class="m-row">
+      <div class="m-field"><label>คลังเตรียม</label><input type="number" id="wePrep" min="0" placeholder="0"></div>
+      <div class="m-field"><label>นับจริง</label><input type="number" id="weCount" min="0" placeholder="0"></div>
+    </div>
+    <div class="m-field"><label>หมายเหตุ</label><input type="text" id="weNote" placeholder="หมายเหตุ"></div>
     <div class="modal-foot"><button class="btn-cancel" id="wdEditCancel">ยกเลิก</button><button class="btn-save" id="wdEditSave">บันทึก</button></div>
+  </div>
+</div>
+
+<!-- Modal: สรุปรวมทุกวัน -->
+<div class="modal-bg" id="wdSumBg">
+  <div class="modal" style="max-width:900px">
+    <div class="modal-head"><h2 id="wdSumTitle">สรุปรวมทุกวัน</h2><button class="modal-close" id="wdSumClose">&times;</button></div>
+    <div style="max-height:60vh;overflow:auto">
+      <table class="ev-table" style="min-width:640px"><thead><tr>
+        <th class="sku-col">SKU</th><th class="ev-cell">ชื่อสินค้า</th>
+        <th class="num">เบิก</th><th class="num">ตัวโชว์</th><th class="num">ชำรุด</th><th class="num">ขายออก</th>
+        <th class="num" style="white-space:normal;line-height:1.15">คงเหลือ<br>หน้างาน</th>
+      </tr></thead><tbody id="wdSumBody"></tbody><tfoot id="wdSumFoot"></tfoot></table>
+    </div>
+    <div class="modal-foot" style="gap:10px">
+      <button class="btn-cancel" id="wdSumClose2">ปิด</button>
+      <button class="btn-save" id="wdSyncBtn" style="flex:1;background:#1E7145">⬆ ซิงยอดสรุปไปหน้าล็อกสต๊อก</button>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-top:8px">💡 ซิงจะเขียนยอด เบิก/ตัวโชว์/ชำรุด/ขายออก (รวมทุกวัน) ลงในหน้าล็อกสต๊อกของรอบนี้ ทับความเคลื่อนไหวเดิม</div>
   </div>
 </div>
 
@@ -700,7 +735,7 @@ async function enterApp(session){
   $('app').style.display='block';
   // 🔒 โกดัง (warehouse) แก้ได้เฉพาะช่อง "คลังแก้ได้" — ซ่อนปุ่มที่ทำไม่ได้
   if(currentRole === 'warehouse'){
-    ['skuAddBtn','skuImportBtn','skuClearBtn','lockAddRoundBtn','lockDelRoundBtn','lockAddItemBtn','wdPullBtn','wdAddBtn']
+    ['skuAddBtn','skuImportBtn','skuClearBtn','lockAddRoundBtn','lockEditRoundBtn','lockDelRoundBtn','lockAddItemBtn','wdPullBtn','wdAddBtn']
       .forEach(id => { const el = $(id); if(el) el.style.display = 'none'; });
   }
   loadJobs();
@@ -1012,6 +1047,10 @@ async function confirmSkuImport(){
 let allLocks = [];        // รอบงาน
 let allLockItems = [];    // รายการ SKU ในรอบ (พ่วง moves)
 let currentLockId = '';   // รอบที่กำลังดู
+function roundLabel(l){
+  const r = (l.start_date && l.end_date) ? ` (${fmtDate(l.start_date)}–${fmtDate(l.end_date)})` : '';
+  return (l.name || '(ไม่มีชื่อ)') + r;
+}
 const MOVE_TYPES = ['เบิก','ตัวโชว์','ชำรุด','ขายออก'];
 const MOVE_KEY = { 'เบิก':'withdraw','ตัวโชว์':'show','ชำรุด':'damage','ขายออก':'sold' };
 
@@ -1030,7 +1069,7 @@ async function loadLocks(){
   const sel = $('lockRoundSel');
   const prev = currentLockId;
   sel.innerHTML = '<option value="">— เลือกรอบงาน —</option>' +
-    allLocks.map(l => `<option value="${l.id}">${esc(l.name||'(ไม่มีชื่อ)')}</option>`).join('');
+    allLocks.map(l => `<option value="${l.id}">${esc(roundLabel(l))}</option>`).join('');
   if(allLocks.some(l=>l.id===prev)) sel.value = prev;
   else { currentLockId = allLocks[0]?.id || ''; sel.value = currentLockId; }
   renderLock();
@@ -1123,23 +1162,44 @@ function renderLock(){
 $('lockRoundSel').addEventListener('change', e => { currentLockId = e.target.value; renderLock(); });
 $('lockSearch').addEventListener('input', renderLock);
 
-// ---- รอบงาน ----
-$('lockAddRoundBtn').addEventListener('click', () => {
-  $('rdName').value=''; $('rdNote').value=''; $('roundBg').style.display='flex';
+// ---- รอบงาน (สร้าง/แก้ไข) ----
+$('lockAddRoundBtn').addEventListener('click', () => openRound(null));
+$('lockEditRoundBtn').addEventListener('click', () => {
+  if(!currentLockId){ toast('เลือกรอบที่จะแก้ก่อน'); return; }
+  openRound(currentLockId);
 });
+function openRound(id){
+  const l = id ? allLocks.find(x=>x.id===id) : null;
+  $('roundTitle').textContent = l ? 'แก้ไขรอบงาน' : 'เพิ่มรอบงานใหม่';
+  $('rdId').value = l ? l.id : '';
+  $('rdName').value = l ? (l.name||'') : '';
+  $('rdStart').value = l ? (l.start_date||'') : '';
+  $('rdEnd').value = l ? (l.end_date||'') : '';
+  $('rdNote').value = l ? (l.note||'') : '';
+  $('roundBg').style.display='flex';
+}
 $('roundClose').addEventListener('click', () => $('roundBg').style.display='none');
 $('roundCancel').addEventListener('click', () => $('roundBg').style.display='none');
 $('roundBg').addEventListener('click', e => { if(e.target===$('roundBg')) $('roundBg').style.display='none'; });
 $('roundSave').addEventListener('click', async () => {
   const name = $('rdName').value.trim();
-  if(!name){ toast('กรุณาตั้งชื่อรอบ'); return; }
+  if(!name){ toast('กรุณาตั้งชื่องาน'); return; }
+  const start = $('rdStart').value || null, end = $('rdEnd').value || null;
+  if(start && end && end < start){ toast('วันจบต้องไม่ก่อนวันเริ่ม'); return; }
+  const payload = { name, start_date:start, end_date:end, note:$('rdNote').value.trim()||null };
+  const id = $('rdId').value;
   $('roundSave').disabled=true;
-  const res = await sb.from('stock_locks').insert({ name, note:$('rdNote').value.trim()||null }).select('id').single();
+  let error, newId = id;
+  if(id){ ({ error } = await sb.from('stock_locks').update(payload).eq('id', id)); }
+  else {
+    const res = await sb.from('stock_locks').insert(payload).select('id').single();
+    error = res.error; newId = res.data?.id;
+  }
   $('roundSave').disabled=false;
-  if(res.error){ toast('สร้างรอบไม่สำเร็จ: '+res.error.message); return; }
-  currentLockId = res.data.id;
+  if(error){ toast('บันทึกรอบไม่สำเร็จ: '+error.message); return; }
+  if(newId) currentLockId = newId;
   $('roundBg').style.display='none';
-  toast('สร้างรอบเรียบร้อย');
+  toast('บันทึกรอบเรียบร้อย');
   loadLocks();
 });
 
@@ -1319,9 +1379,32 @@ function refreshWdRoundSel(){
   const sel = $('wdRoundSel'); if(!sel) return;
   const prev = currentWdLock;
   sel.innerHTML = '<option value="">— เลือกรอบงาน —</option>' +
-    allLocks.map(l => `<option value="${l.id}">${esc(l.name||'(ไม่มีชื่อ)')}</option>`).join('');
+    allLocks.map(l => `<option value="${l.id}">${esc(roundLabel(l))}</option>`).join('');
   if(allLocks.some(l=>l.id===prev)) sel.value = prev;
   else { currentWdLock = allLocks[0]?.id || ''; sel.value = currentWdLock; }
+}
+
+function daysInRange(start, end){
+  const out=[]; if(!start||!end) return out;
+  let d=new Date(start+'T00:00:00'), e=new Date(end+'T00:00:00');
+  let guard=0;
+  while(d<=e && guard++<400){ out.push(ymd(d)); d.setDate(d.getDate()+1); }
+  return out;
+}
+function wdCalc(w){   // คงเหลือหน้างาน = เบิก − ขายออก − ชำรุด − ตัวโชว์
+  return Number(w.requested||0) - Number(w.sold_qty||0) - Number(w.damage_qty||0) - Number(w.show_qty||0);
+}
+function rebuildWdDaySel(){
+  const sel = $('wdDaySel'); if(!sel) return;
+  const l = allLocks.find(x=>x.id===currentWdLock);
+  let days = (l && l.start_date && l.end_date) ? daysInRange(l.start_date, l.end_date) : [];
+  [...new Set(allWd.filter(w=>w.lock_id===currentWdLock).map(w=>w.day_date).filter(Boolean))]
+    .forEach(d => { if(!days.includes(d)) days.push(d); });
+  days.sort();
+  if(days.length===0) days=[ymd(new Date())];
+  sel.innerHTML = days.map(d => `<option value="${d}">${fmtDate(d)}</option>`).join('');
+  if(!days.includes(currentWdDate)) currentWdDate = days[0];
+  sel.value = currentWdDate;
 }
 
 async function loadWd(){
@@ -1330,8 +1413,7 @@ async function loadWd(){
   if(error){ console.error(error); return; }
   allWd = data || [];
   refreshWdRoundSel();
-  if(!currentWdDate) currentWdDate = ymd(new Date());
-  if($('wdDate')) $('wdDate').value = currentWdDate;
+  rebuildWdDaySel();
   renderWd();
 }
 
@@ -1339,25 +1421,24 @@ function renderWd(){
   const chips = $('wdChips'), tb = $('wdBody');
   if(!currentWdLock){
     chips.innerHTML='';
-    tb.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--muted)">
+    tb.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:40px;color:var(--muted)">
       ยังไม่มีรอบงาน — สร้างรอบในแท็บ "🔒 ล็อกสต็อก" ก่อน</td></tr>`;
     return;
   }
   const inRound = allWd.filter(w => w.lock_id===currentWdLock);
-  // ชิปวันที่ที่มีข้อมูลในรอบนี้
-  const dates = [...new Set(inRound.map(w=>w.day_date).filter(Boolean))].sort().reverse();
-  chips.innerHTML = dates.length ? '<span style="font-size:12px;color:var(--muted);align-self:center;margin-right:2px">วันเบิก:</span>' +
+  const dates = [...new Set(inRound.map(w=>w.day_date).filter(Boolean))].sort();
+  chips.innerHTML = dates.length ? '<span style="font-size:12px;color:var(--muted);align-self:center;margin-right:2px">วันที่มีข้อมูล:</span>' +
     dates.map(d => `<button class="wk-today" style="padding:5px 12px;${d===currentWdDate?'background:var(--navy);color:#fff;border-color:var(--navy)':''}" onclick="pickWdDate('${d}')">${fmtDate(d)}</button>`).join('') : '';
 
   const q = $('wdSearch').value.toLowerCase().trim();
   let rows = inRound.filter(w => w.day_date===currentWdDate);
   if(q) rows = rows.filter(w => (w.sku||'').toLowerCase().includes(q) || (w.name||'').toLowerCase().includes(q));
   if(rows.length === 0){
-    tb.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--muted)">
-      ${q?'ไม่พบ SKU ที่ค้นหา':'ยังไม่มีรายการเบิกของวันนี้ — กด "⬇ ดึง SKU จากรอบ" หรือ "+ เพิ่ม SKU"'}</td></tr>`;
+    tb.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:40px;color:var(--muted)">
+      ${q?'ไม่พบ SKU ที่ค้นหา':'ยังไม่มีรายการของวันนี้ — กด "⬇ ดึง SKU จากรอบ" หรือ "+ เพิ่ม SKU"'}</td></tr>`;
     return;
   }
-  const numView  = v => v!=null ? Number(v).toLocaleString() : '<span style="color:var(--muted)">—</span>';
+  const numView = v => v!=null ? Number(v).toLocaleString() : '<span style="color:var(--muted)">—</span>';
   tb.innerHTML = rows.map((w,i) => {
     const diff = (w.counted!=null && w.requested!=null && Number(w.counted)!==Number(w.requested));
     const countStyle = diff ? 'background:var(--red-bg);font-weight:700' : '';
@@ -1366,7 +1447,11 @@ function renderWd(){
       <td class="num" style="color:var(--muted)">${i+1}</td>
       <td class="sku-col"><b>${w.sku?esc(w.sku):'—'}</b></td>
       <td>${w.name?esc(w.name):'<span style="color:var(--muted)">—</span>'}</td>
-      <td class="num">${numView(w.requested)}</td>
+      <td class="num"><span class="mv-badge mv-withdraw">${numView(w.requested)}</span></td>
+      <td class="num"><span class="mv-badge mv-show">${numView(w.show_qty)}</span></td>
+      <td class="num"><span class="mv-badge mv-damage">${numView(w.damage_qty)}</span></td>
+      <td class="num"><span class="mv-badge mv-sold">${numView(w.sold_qty)}</span></td>
+      <td class="num calc-onsite">${wdCalc(w).toLocaleString()}</td>
       <td class="num">${numView(w.prepared)}</td>
       <td class="num" style="${countStyle}">${numView(w.counted)}</td>
       <td>${w.note?esc(w.note):'<span style="color:var(--muted)">—</span>'}</td>
@@ -1379,9 +1464,9 @@ function renderWd(){
   }).join('');
 }
 
-window.pickWdDate = function(d){ currentWdDate = d; if($('wdDate')) $('wdDate').value = d; renderWd(); };
-$('wdRoundSel').addEventListener('change', e => { currentWdLock = e.target.value; renderWd(); });
-$('wdDate').addEventListener('change', e => { currentWdDate = e.target.value; renderWd(); });
+window.pickWdDate = function(d){ currentWdDate = d; if($('wdDaySel')) $('wdDaySel').value = d; renderWd(); };
+$('wdRoundSel').addEventListener('change', e => { currentWdLock = e.target.value; rebuildWdDaySel(); renderWd(); });
+$('wdDaySel').addEventListener('change', e => { currentWdDate = e.target.value; renderWd(); });
 $('wdSearch').addEventListener('input', renderWd);
 
 // ---- ดึง SKU ทั้งหมดจากรอบล็อกมาลงวันเบิกนี้ ----
@@ -1470,13 +1555,16 @@ window.openEditWd = function(id){
   $('weId').value = id;
   $('wdEditTitle').textContent = 'แก้ไข — ' + (w.sku||'');
   $('weReq').value   = w.requested!=null ? w.requested : '';
+  $('weShow').value  = w.show_qty!=null ? w.show_qty : '';
+  $('weDamage').value= w.damage_qty!=null ? w.damage_qty : '';
+  $('weSold').value  = w.sold_qty!=null ? w.sold_qty : '';
   $('wePrep').value  = w.prepared!=null ? w.prepared : '';
   $('weCount').value = w.counted!=null ? w.counted : '';
   $('weNote').value  = w.note || '';
   const wh = isWh();                 // โกดังแก้ได้เฉพาะ คลังเตรียม + หมายเหตุ
-  $('weReq').disabled = wh; $('weCount').disabled = wh;
-  $('weReq').style.opacity = wh ? '.45' : '1';
-  $('weCount').style.opacity = wh ? '.45' : '1';
+  ['weReq','weShow','weDamage','weSold','weCount'].forEach(id => {
+    $(id).disabled = wh; $(id).style.opacity = wh ? '.45' : '1';
+  });
   $('wdEditBg').style.display='flex';
 };
 async function saveEditWd(){
@@ -1490,7 +1578,10 @@ async function saveEditWd(){
   };
   if(!isWh()){
     payload.requested = num($('weReq').value);
-    payload.counted = num($('weCount').value);
+    payload.show_qty  = num($('weShow').value);
+    payload.damage_qty= num($('weDamage').value);
+    payload.sold_qty  = num($('weSold').value);
+    payload.counted   = num($('weCount').value);
   }
   $('wdEditSave').disabled=true;
   const { error } = await sb.from('daily_withdraws').update(payload).eq('id', id);
@@ -1500,6 +1591,91 @@ async function saveEditWd(){
   toast('บันทึกเรียบร้อย');
   loadWd();
 }
+
+// ---- สรุปรวมทุกวัน + ซิงไปล็อกสต๊อก ----
+function wdSummary(){
+  // รวมยอดต่อ SKU จากทุกวันในรอบปัจจุบัน
+  const rows = allWd.filter(w => w.lock_id===currentWdLock);
+  const map = {};
+  rows.forEach(w => {
+    const k = w.sku || '(ไม่มี SKU)';
+    if(!map[k]) map[k] = { sku:w.sku, name:w.name, withdraw:0, show:0, damage:0, sold:0 };
+    map[k].withdraw += Number(w.requested||0);
+    map[k].show     += Number(w.show_qty||0);
+    map[k].damage   += Number(w.damage_qty||0);
+    map[k].sold     += Number(w.sold_qty||0);
+    if(!map[k].name && w.name) map[k].name = w.name;
+  });
+  return Object.values(map);
+}
+$('wdSummaryBtn').addEventListener('click', () => {
+  if(!currentWdLock){ toast('เลือกรอบก่อน'); return; }
+  const l = allLocks.find(x=>x.id===currentWdLock);
+  const sum = wdSummary();
+  $('wdSumTitle').textContent = 'สรุปรวมทุกวัน — ' + (l?.name || '');
+  if(sum.length===0){
+    $('wdSumBody').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--muted)">ยังไม่มีข้อมูลในรอบนี้</td></tr>';
+    $('wdSumFoot').innerHTML='';
+  } else {
+    const t = { withdraw:0, show:0, damage:0, sold:0, onsite:0 };
+    $('wdSumBody').innerHTML = sum.map(s => {
+      const onsite = s.withdraw - s.sold - s.damage - s.show;
+      t.withdraw+=s.withdraw; t.show+=s.show; t.damage+=s.damage; t.sold+=s.sold; t.onsite+=onsite;
+      return `<tr>
+        <td class="sku-col"><b>${s.sku?esc(s.sku):'—'}</b></td>
+        <td>${s.name?esc(s.name):'—'}</td>
+        <td class="num"><span class="mv-badge mv-withdraw">${s.withdraw.toLocaleString()}</span></td>
+        <td class="num"><span class="mv-badge mv-show">${s.show.toLocaleString()}</span></td>
+        <td class="num"><span class="mv-badge mv-damage">${s.damage.toLocaleString()}</span></td>
+        <td class="num"><span class="mv-badge mv-sold">${s.sold.toLocaleString()}</span></td>
+        <td class="num calc-onsite">${onsite.toLocaleString()}</td>
+      </tr>`;
+    }).join('');
+    $('wdSumFoot').innerHTML = `<tr class="lock-foot">
+      <td colspan="2" style="text-align:right">รวม</td>
+      <td class="num">${t.withdraw.toLocaleString()}</td><td class="num">${t.show.toLocaleString()}</td>
+      <td class="num">${t.damage.toLocaleString()}</td><td class="num">${t.sold.toLocaleString()}</td>
+      <td class="num calc-onsite">${t.onsite.toLocaleString()}</td></tr>`;
+  }
+  // โกดังไม่ให้ซิง (เป็นงานฝั่งออฟฟิศ)
+  $('wdSyncBtn').style.display = isWh() ? 'none' : 'block';
+  $('wdSumBg').style.display='flex';
+});
+$('wdSumClose').addEventListener('click', ()=>$('wdSumBg').style.display='none');
+$('wdSumClose2').addEventListener('click', ()=>$('wdSumBg').style.display='none');
+$('wdSumBg').addEventListener('click', e=>{ if(e.target===$('wdSumBg')) $('wdSumBg').style.display='none'; });
+
+$('wdSyncBtn').addEventListener('click', async () => {
+  const sum = wdSummary();
+  if(sum.length===0){ toast('ไม่มีข้อมูลให้ซิง'); return; }
+  const lockItems = allLockItems.filter(it => it.lock_id===currentWdLock);
+  const bySku = {}; lockItems.forEach(it => { bySku[(it.sku||'').toLowerCase()] = it; });
+  const matched = sum.filter(s => bySku[(s.sku||'').toLowerCase()]);
+  const missing = sum.length - matched.length;
+  if(matched.length===0){ toast('ไม่พบ SKU ตรงกันในล็อกสต๊อก — เพิ่ม SKU เข้ารอบล็อกก่อน'); return; }
+  if(!confirm(`ซิงยอดรวม ${matched.length} SKU ไปหน้าล็อกสต๊อก?\nจะเขียนทับความเคลื่อนไหวเดิม (เบิก/ตัวโชว์/ชำรุด/ขายออก) ของ SKU เหล่านั้น${missing?`\n(อีก ${missing} SKU ไม่มีในรอบล็อก จะข้าม)`:''}`)) return;
+  $('wdSyncBtn').disabled=true; $('wdSyncBtn').textContent='กำลังซิง...';
+  const today = ymd(new Date());
+  const itemIds = matched.map(s => bySku[(s.sku||'').toLowerCase()].id);
+  // ลบ moves เดิมของ item ที่จะซิง แล้วใส่ยอดรวมใหม่
+  const delRes = await sb.from('stock_moves').delete().in('item_id', itemIds);
+  if(delRes.error){ $('wdSyncBtn').disabled=false; $('wdSyncBtn').innerHTML='⬆ ซิงยอดสรุปไปหน้าล็อกสต๊อก'; toast('ซิงไม่สำเร็จ: '+delRes.error.message); return; }
+  const inserts = [];
+  matched.forEach(s => {
+    const it = bySku[(s.sku||'').toLowerCase()];
+    [['เบิก',s.withdraw],['ตัวโชว์',s.show],['ชำรุด',s.damage],['ขายออก',s.sold]].forEach(([type,qty]) => {
+      if(qty>0) inserts.push({ item_id: it.id, move_type: type, move_date: today, qty, created_by: currentEmail });
+    });
+  });
+  if(inserts.length){
+    const insRes = await sb.from('stock_moves').insert(inserts);
+    if(insRes.error){ $('wdSyncBtn').disabled=false; $('wdSyncBtn').innerHTML='⬆ ซิงยอดสรุปไปหน้าล็อกสต๊อก'; toast('ซิงไม่สำเร็จ: '+insRes.error.message); return; }
+  }
+  $('wdSyncBtn').disabled=false; $('wdSyncBtn').innerHTML='⬆ ซิงยอดสรุปไปหน้าล็อกสต๊อก';
+  $('wdSumBg').style.display='none';
+  toast(`ซิง ${matched.length} SKU ไปหน้าล็อกสต๊อกเรียบร้อย`);
+  loadLocks();
+});
 
 // ===== WEEK NAV =====
 function startOfWeek(d){ const x=new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate()-x.getDay()); return x; }
