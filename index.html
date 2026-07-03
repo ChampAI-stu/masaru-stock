@@ -407,6 +407,36 @@
   </div>
 </div>
 
+<!-- Modal: แก้ไขรายการล็อกสต็อก -->
+<div class="modal-bg" id="lockEditBg">
+  <div class="modal">
+    <div class="modal-head"><h2 id="lockEditTitle">แก้ไขรายการ</h2><button class="modal-close" id="lockEditClose">&times;</button></div>
+    <input type="hidden" id="leId">
+    <div class="m-row">
+      <div class="m-field"><label>จำนวนแจ้งล็อก</label><input type="number" id="leLocked" min="0" placeholder="0"></div>
+      <div class="m-field"><label>คลังเตรียม</label><input type="number" id="lePrepared" min="0" placeholder="0"></div>
+    </div>
+    <div class="modal-foot"><button class="btn-cancel" id="lockEditCancel">ยกเลิก</button><button class="btn-save" id="lockEditSave">บันทึก</button></div>
+  </div>
+</div>
+
+<!-- Modal: แก้ไขรายการเบิกรายวัน -->
+<div class="modal-bg" id="wdEditBg">
+  <div class="modal">
+    <div class="modal-head"><h2 id="wdEditTitle">แก้ไขรายการ</h2><button class="modal-close" id="wdEditClose">&times;</button></div>
+    <input type="hidden" id="weId">
+    <div class="m-row">
+      <div class="m-field"><label>เบิก</label><input type="number" id="weReq" min="0" placeholder="0"></div>
+      <div class="m-field"><label>คลังเตรียม</label><input type="number" id="wePrep" min="0" placeholder="0"></div>
+    </div>
+    <div class="m-row">
+      <div class="m-field"><label>นับจริง</label><input type="number" id="weCount" min="0" placeholder="0"></div>
+      <div class="m-field"><label>หมายเหตุ</label><input type="text" id="weNote" placeholder="หมายเหตุ"></div>
+    </div>
+    <div class="modal-foot"><button class="btn-cancel" id="wdEditCancel">ยกเลิก</button><button class="btn-save" id="wdEditSave">บันทึก</button></div>
+  </div>
+</div>
+
 <!-- Modal: เพิ่ม SKU เข้ารอบ -->
 <div class="modal-bg" id="lockItemBg">
   <div class="modal">
@@ -737,21 +767,22 @@ function renderSkus(){
     tb.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--muted)">
       ${q?'ไม่พบ SKU ที่ค้นหา':'ยังไม่มี SKU — กด "เพิ่ม SKU" หรือ "นำเข้า Excel"'}</td></tr>`;
   } else {
-    tb.innerHTML = rows.map((s,i) => isWh()
-      ? `<tr>
+    tb.innerHTML = rows.map((s,i) => {
+      const priceCell = s.price!=null?'<span class="sku-price">'+Number(s.price).toLocaleString()+'</span>':'—';
+      const actions = isWh()
+        ? '<span style="color:var(--muted);font-size:12px">ดูอย่างเดียว</span>'
+        : `<div style="display:flex;gap:6px">
+            <button class="act-btn" onclick="openEditSku('${s.id}')" title="แก้ไข">✏️</button>
+            <button class="act-btn act-del" onclick="delSku('${s.id}')" title="ลบ">🗑️</button>
+          </div>`;
+      return `<tr>
         <td class="num" style="color:var(--muted)">${i+1}</td>
         <td class="sku-col"><b>${s.sku?esc(s.sku):'—'}</b></td>
         <td>${s.name?esc(s.name):'<span style="color:var(--muted)">—</span>'}</td>
-        <td class="num">${s.price!=null?'<span class="sku-price">'+Number(s.price).toLocaleString()+'</span>':'—'}</td>
-        <td><span style="color:var(--muted);font-size:12px">ดูอย่างเดียว</span></td>
-      </tr>`
-      : `<tr>
-        <td class="num" style="color:var(--muted)">${i+1}</td>
-        <td class="sku-col"><input type="text" class="cell-input" style="width:120px;text-align:left;font-weight:700" value="${s.sku?esc(s.sku):''}" onchange="setSkuField('${s.id}','sku',this.value)"></td>
-        <td><input type="text" class="cell-input" style="width:100%;text-align:left" value="${s.name?esc(s.name):''}" placeholder="ชื่อสินค้า" onchange="setSkuField('${s.id}','name',this.value)"></td>
-        <td class="num"><input type="number" min="0" step="0.01" class="cell-input" value="${s.price!=null?s.price:''}" placeholder="0" onchange="setSkuField('${s.id}','price',this.value)"></td>
-        <td><button class="act-btn act-del" onclick="delSku('${s.id}')">🗑️</button></td>
-      </tr>`).join('');
+        <td class="num">${priceCell}</td>
+        <td>${actions}</td>
+      </tr>`;
+    }).join('');
   }
   $('skuCount').textContent = `${rows.length.toLocaleString()} SKU${q?` (จากทั้งหมด ${allSkus.length.toLocaleString()})`:''}`;
 }
@@ -1002,10 +1033,8 @@ function renderLock(){
       <td class="num" style="color:var(--muted)">${i+1}</td>
       <td class="sku-col"><b>${it.sku?esc(it.sku):'—'}</b></td>
       <td>${it.name?esc(it.name):'<span style="color:var(--muted)">—</span>'}</td>
-      <td class="num">${isWh()
-        ? (it.locked_qty!=null?Number(it.locked_qty).toLocaleString():'—')
-        : `<input type="number" min="0" class="cell-input" value="${it.locked_qty!=null?it.locked_qty:''}" placeholder="0" onchange="setLocked('${it.id}', this.value)">`}</td>
-      <td class="num"><input type="number" min="0" class="cell-input" value="${it.prepared_qty!=null?it.prepared_qty:''}" placeholder="${it.locked_qty!=null?it.locked_qty:0}" onchange="setPrepared('${it.id}', this.value)"></td>
+      <td class="num">${it.locked_qty!=null?Number(it.locked_qty).toLocaleString():'—'}</td>
+      <td class="num">${it.prepared_qty!=null?Number(it.prepared_qty).toLocaleString():'<span style="color:var(--muted)">—</span>'}</td>
       <td class="num"><span class="mv-badge mv-withdraw">${c.withdraw.toLocaleString()}</span></td>
       <td class="num"><span class="mv-badge mv-show">${c.show.toLocaleString()}</span></td>
       <td class="num"><span class="mv-badge mv-damage">${c.damage.toLocaleString()}</span></td>
@@ -1013,6 +1042,7 @@ function renderLock(){
       <td class="num calc-onsite">${c.onsite.toLocaleString()}</td>
       <td class="num calc-instock">${c.instock.toLocaleString()}</td>
       <td><div style="display:flex;gap:6px">
+        <button class="act-btn" onclick="openEditLock('${it.id}')" title="แก้ไขตัวเลข">✏️</button>
         <button class="act-btn" onclick="openMoves('${it.id}')" title="${isWh()?'ดูความเคลื่อนไหว':'บันทึกความเคลื่อนไหว'}">📊</button>
         ${isWh()?'':`<button class="act-btn act-del" onclick="delLockItem('${it.id}')" title="ลบออกจากรอบ">🗑️</button>`}
       </div></td>
@@ -1125,6 +1155,37 @@ window.delLockItem = async function(itemId){
   loadLocks();
 };
 
+// ---- แก้ไขตัวเลขล็อก (ปุ่มดินสอ → เปิด modal → กดบันทึก) ----
+$('lockEditClose').addEventListener('click', ()=>$('lockEditBg').style.display='none');
+$('lockEditCancel').addEventListener('click', ()=>$('lockEditBg').style.display='none');
+$('lockEditBg').addEventListener('click', e=>{ if(e.target===$('lockEditBg')) $('lockEditBg').style.display='none'; });
+$('lockEditSave').addEventListener('click', saveEditLock);
+
+window.openEditLock = function(id){
+  const it = allLockItems.find(x=>x.id===id); if(!it) return;
+  $('leId').value = id;
+  $('lockEditTitle').textContent = 'แก้ไข — ' + (it.sku||'');
+  $('leLocked').value = it.locked_qty!=null ? it.locked_qty : '';
+  $('lePrepared').value = it.prepared_qty!=null ? it.prepared_qty : '';
+  const wh = isWh();                 // โกดังแก้ได้เฉพาะคลังเตรียม
+  $('leLocked').disabled = wh;
+  $('leLocked').style.opacity = wh ? '.45' : '1';
+  $('lockEditBg').style.display='flex';
+};
+async function saveEditLock(){
+  const id = $('leId').value;
+  const num = v => v==='' ? null : (parseFloat(v)||0);
+  const payload = { prepared_qty: num($('lePrepared').value) };
+  if(!isWh()) payload.locked_qty = num($('leLocked').value);
+  $('lockEditSave').disabled=true;
+  const { error } = await sb.from('stock_lock_items').update(payload).eq('id', id);
+  $('lockEditSave').disabled=false;
+  if(error){ toast('บันทึกไม่สำเร็จ: '+error.message); return; }
+  $('lockEditBg').style.display='none';
+  toast('บันทึกเรียบร้อย');
+  loadLocks();
+}
+
 // ---- ความเคลื่อนไหว (เบิก/ตัวโชว์/ชำรุด/ขายออก) ----
 $('moveClose').addEventListener('click', () => $('moveBg').style.display='none');
 $('moveDone').addEventListener('click', () => $('moveBg').style.display='none');
@@ -1233,23 +1294,24 @@ function renderWd(){
       ${q?'ไม่พบ SKU ที่ค้นหา':'ยังไม่มีรายการเบิกของวันนี้ — กด "⬇ ดึง SKU จากรอบ" หรือ "+ เพิ่ม SKU"'}</td></tr>`;
     return;
   }
-  const numInput = (id,field,v) => `<input type="number" min="0" class="cell-input" value="${v!=null?v:''}" onchange="setWd('${id}','${field}',this.value)">`;
-  const numView  = v => `<span style="color:var(--text)">${v!=null?Number(v).toLocaleString():'—'}</span>`;
-  const wh = isWh();
+  const numView  = v => v!=null ? Number(v).toLocaleString() : '<span style="color:var(--muted)">—</span>';
   tb.innerHTML = rows.map((w,i) => {
     const diff = (w.counted!=null && w.requested!=null && Number(w.counted)!==Number(w.requested));
-    const countStyle = diff ? 'background:var(--red-bg)' : '';
+    const countStyle = diff ? 'background:var(--red-bg);font-weight:700' : '';
     const who = w.updated_by ? esc(editorLabel(w.updated_by)) : '<span style="color:var(--muted)">—</span>';
     return `<tr>
       <td class="num" style="color:var(--muted)">${i+1}</td>
       <td class="sku-col"><b>${w.sku?esc(w.sku):'—'}</b></td>
       <td>${w.name?esc(w.name):'<span style="color:var(--muted)">—</span>'}</td>
-      <td class="num">${wh ? numView(w.requested) : numInput(w.id,'requested',w.requested)}</td>
-      <td class="num">${numInput(w.id,'prepared',w.prepared)}</td>
-      <td class="num" style="${countStyle}">${wh ? numView(w.counted) : numInput(w.id,'counted',w.counted)}</td>
-      <td><input type="text" class="cell-input" style="width:100%;text-align:left" value="${w.note?esc(w.note):''}" placeholder="หมายเหตุ" onchange="setWd('${w.id}','note',this.value)"></td>
+      <td class="num">${numView(w.requested)}</td>
+      <td class="num">${numView(w.prepared)}</td>
+      <td class="num" style="${countStyle}">${numView(w.counted)}</td>
+      <td>${w.note?esc(w.note):'<span style="color:var(--muted)">—</span>'}</td>
       <td style="font-size:12px">${who}</td>
-      <td>${wh?'':`<button class="act-btn act-del" onclick="delWd('${w.id}')">🗑️</button>`}</td>
+      <td><div style="display:flex;gap:6px">
+        <button class="act-btn" onclick="openEditWd('${w.id}')" title="แก้ไข">✏️</button>
+        ${isWh()?'':`<button class="act-btn act-del" onclick="delWd('${w.id}')" title="ลบ">🗑️</button>`}
+      </div></td>
     </tr>`;
   }).join('');
 }
@@ -1333,6 +1395,48 @@ window.delWd = async function(id){
   toast('ลบเรียบร้อย');
   loadWd();
 };
+
+// ---- แก้ไขเบิกรายวัน (ปุ่มดินสอ → เปิด modal → กดบันทึก) ----
+$('wdEditClose').addEventListener('click', ()=>$('wdEditBg').style.display='none');
+$('wdEditCancel').addEventListener('click', ()=>$('wdEditBg').style.display='none');
+$('wdEditBg').addEventListener('click', e=>{ if(e.target===$('wdEditBg')) $('wdEditBg').style.display='none'; });
+$('wdEditSave').addEventListener('click', saveEditWd);
+
+window.openEditWd = function(id){
+  const w = allWd.find(x=>x.id===id); if(!w) return;
+  $('weId').value = id;
+  $('wdEditTitle').textContent = 'แก้ไข — ' + (w.sku||'');
+  $('weReq').value   = w.requested!=null ? w.requested : '';
+  $('wePrep').value  = w.prepared!=null ? w.prepared : '';
+  $('weCount').value = w.counted!=null ? w.counted : '';
+  $('weNote').value  = w.note || '';
+  const wh = isWh();                 // โกดังแก้ได้เฉพาะ คลังเตรียม + หมายเหตุ
+  $('weReq').disabled = wh; $('weCount').disabled = wh;
+  $('weReq').style.opacity = wh ? '.45' : '1';
+  $('weCount').style.opacity = wh ? '.45' : '1';
+  $('wdEditBg').style.display='flex';
+};
+async function saveEditWd(){
+  const id = $('weId').value;
+  const num = v => v==='' ? null : (parseFloat(v)||0);
+  const payload = {
+    prepared: num($('wePrep').value),
+    note: $('weNote').value.trim() || null,
+    updated_by: currentEmail,
+    updated_at: new Date().toISOString()
+  };
+  if(!isWh()){
+    payload.requested = num($('weReq').value);
+    payload.counted = num($('weCount').value);
+  }
+  $('wdEditSave').disabled=true;
+  const { error } = await sb.from('daily_withdraws').update(payload).eq('id', id);
+  $('wdEditSave').disabled=false;
+  if(error){ toast('บันทึกไม่สำเร็จ: '+error.message); return; }
+  $('wdEditBg').style.display='none';
+  toast('บันทึกเรียบร้อย');
+  loadWd();
+}
 
 // ===== WEEK NAV =====
 function startOfWeek(d){ const x=new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate()-x.getDay()); return x; }
