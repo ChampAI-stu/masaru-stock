@@ -295,6 +295,7 @@
         </div>
         <button class="add-btn" id="skuImportBtn" style="background:#1E7145">📥 นำเข้า Excel</button>
         <button class="add-btn" id="skuAddBtn">+ เพิ่ม SKU</button>
+        <button class="add-btn" id="skuClearBtn" style="background:#fff;color:var(--red);border:1px solid var(--red)">🗑️ ลบทั้งหมด</button>
         <input type="file" id="skuFile" accept=".xlsx,.xls,.csv" style="display:none">
       </div>
       <div class="table-card">
@@ -697,7 +698,7 @@ async function enterApp(session){
   $('app').style.display='block';
   // 🔒 โกดัง (warehouse) แก้ได้เฉพาะช่อง "คลังแก้ได้" — ซ่อนปุ่มที่ทำไม่ได้
   if(currentRole === 'warehouse'){
-    ['skuAddBtn','skuImportBtn','lockAddRoundBtn','lockDelRoundBtn','lockAddItemBtn','wdPullBtn','wdAddBtn']
+    ['skuAddBtn','skuImportBtn','skuClearBtn','lockAddRoundBtn','lockDelRoundBtn','lockAddItemBtn','wdPullBtn','wdAddBtn']
       .forEach(id => { const el = $(id); if(el) el.style.display = 'none'; });
   }
   loadJobs();
@@ -876,6 +877,21 @@ window.delSku = async function(id){
   toast('ลบ SKU เรียบร้อย');
   loadSkus();
 };
+
+// ---- ลบ SKU ทั้งหมด (ล้างก่อน import ใหม่) ----
+$('skuClearBtn').addEventListener('click', async () => {
+  const n = allSkus.length;
+  if(n === 0){ toast('ยังไม่มี SKU ให้ลบ'); return; }
+  const ans = prompt(`⚠️ ลบ SKU ทั้งหมด ${n.toLocaleString()} รายการออกจากฐานข้อมูล?\nลบแล้วกู้คืนไม่ได้\n\nพิมพ์คำว่า  ลบ  แล้วกด OK เพื่อยืนยัน`);
+  if(ans === null) return;                       // กด Cancel
+  if(ans.trim() !== 'ลบ'){ toast('ยกเลิก — ต้องพิมพ์คำว่า "ลบ" ให้ตรงเพื่อยืนยัน'); return; }
+  $('skuClearBtn').disabled = true; $('skuClearBtn').textContent = 'กำลังลบ...';
+  const { error } = await sb.from('sku_master').delete().neq('id','00000000-0000-0000-0000-000000000000');
+  $('skuClearBtn').disabled = false; $('skuClearBtn').innerHTML = '🗑️ ลบทั้งหมด';
+  if(error){ toast('ลบไม่สำเร็จ: '+error.message); return; }
+  toast(`ลบ SKU ทั้งหมด ${n.toLocaleString()} รายการเรียบร้อย`);
+  loadSkus();
+});
 
 // ---- นำเข้า Excel ----
 let skuImportRecords = [];
