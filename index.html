@@ -838,27 +838,39 @@ function handleSkuFile(e){
       const ws = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
       if(rows.length < 2){ toast('ไฟล์ไม่มีข้อมูล'); return; }
-      const headers = rows[0].map(h => String(h).trim());
-      const has = (...keys) => headers.findIndex(h => keys.some(k => h.includes(k)));
-      const ci = {
-        sku:   has('SKU','COMBO','รหัส'),
-        name:  has('ชื่อสินค้า','ชื่่อสินค้า','ชื่อ'),
-        price: has('ราคา')
-      };
-      if(ci.sku < 0){ toast('ไม่พบคอลัมน์ SKU — โหลดเทมเพลตไปใช้นะคะ'); return; }
+      // หาแถวหัวตารางเอง (รองรับไฟล์ที่มีป้ายหมวดหมู่/หัวข้ออยู่บนสุด)
+      let headerIdx = -1, ci = null;
+      for(let i=0; i<Math.min(rows.length,15); i++){
+        const hs = rows[i].map(h => String(h).trim());
+        const find = (...keys) => hs.findIndex(h => h && keys.some(k => h.includes(k)));
+        const sku = find('รหัสสินค้า','รหัส','SKU','COMBO');
+        if(sku >= 0){
+          headerIdx = i;
+          ci = { sku, name: find('ชื่อสินค้า','ชื่อ'), price: find('ราคาหน้างาน','ราคาขาย','ราคา') };
+          break;
+        }
+      }
+      if(headerIdx < 0){ toast('ไม่พบคอลัมน์ SKU/รหัสสินค้า — โหลดเทมเพลตไปใช้'); return; }
       skuImportRecords = [];
-      for(let i=1;i<rows.length;i++){
+      const seen = {};   // dedupe ในไฟล์ (SKU ซ้ำ เก็บตัวท้าย)
+      let skippedCat = 0;
+      for(let i=headerIdx+1; i<rows.length; i++){
         const r = rows[i];
+        const c0 = String(r[0]||'').trim();
+        if(c0.includes('หมวดหมู่')){ skippedCat++; continue; }   // ข้ามป้ายหมวดหมู่
         const sku = String(r[ci.sku]||'').trim();
-        if(!sku) continue;
+        if(!sku || sku==='รหัสสินค้า' || sku.toUpperCase()==='SKU') continue;   // ข้ามว่าง/หัวตารางซ้ำ
         const priceRaw = ci.price>=0 ? r[ci.price] : '';
-        skuImportRecords.push({
+        const rec = {
           sku,
           name: ci.name>=0 ? (String(r[ci.name]||'').trim()||null) : null,
           price: (priceRaw==='' || priceRaw==null) ? null : (parseFloat(priceRaw)||0)
-        });
+        };
+        if(seen[sku]!=null) skuImportRecords[seen[sku]] = rec;   // ทับตัวเดิม
+        else { seen[sku] = skuImportRecords.length; skuImportRecords.push(rec); }
       }
       if(skuImportRecords.length === 0){ toast('ไม่พบรายการที่มี SKU'); return; }
+      if(skippedCat > 0) toast(`อ่านสำเร็จ (ข้ามป้ายหมวดหมู่ ${skippedCat} แถว)`);
       $('skuImportCount').textContent = skuImportRecords.length;
       $('skuImportBody').innerHTML = skuImportRecords.slice(0,50).map(r => `<tr>
         <td><b>${esc(r.sku)}</b></td><td>${esc(r.name||'—')}</td>
