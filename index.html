@@ -327,6 +327,7 @@
         <button class="add-btn" id="lockDelRoundBtn" style="background:#fff;color:var(--red);border:1px solid var(--red)">🗑️ ลบรอบ</button>
         <div class="search-wrap" style="min-width:170px"><span class="search-ico">🔍</span><input type="text" id="lockSearch" placeholder="ค้นหา SKU..."></div>
         <button class="add-btn" id="lockAddItemBtn">+ เพิ่ม SKU เข้ารอบ</button>
+        <button class="add-btn" id="lockCopyBtn" style="background:#6C4AB6">📋 คัดลอกจากรอบอื่น</button>
       </div>
       <div class="table-card">
         <div class="table-scroll">
@@ -409,6 +410,16 @@
     <div class="modal-foot"><button class="btn-cancel" id="wdItemCancel">ยกเลิก</button><button class="btn-save" id="wdItemSave">เพิ่ม</button></div>
   </div>
 </div>
+<!-- Modal: คัดลอก SKU จากรอบอื่น -->
+<div class="modal-bg" id="lockCopyBg">
+  <div class="modal">
+    <div class="modal-head"><h2>คัดลอก SKU จากรอบอื่น</h2><button class="modal-close" id="lockCopyClose">&times;</button></div>
+    <div class="m-field"><label>เลือกรอบต้นทาง</label><select id="lockCopySrc"></select></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:6px">💡 คัดลอก SKU + จำนวนแจ้งล็อก + คลังเตรียม + หมายเหตุ มาลงรอบนี้ (ไม่รวมความเคลื่อนไหว) · SKU ที่มีอยู่แล้วจะข้ามให้</div>
+    <div class="modal-foot"><button class="btn-cancel" id="lockCopyCancel">ยกเลิก</button><button class="btn-save" id="lockCopyConfirm">คัดลอก</button></div>
+  </div>
+</div>
+
 <div class="modal-bg" id="roundBg">
   <div class="modal">
     <div class="modal-head"><h2 id="roundTitle">เพิ่มรอบงานใหม่</h2><button class="modal-close" id="roundClose">&times;</button></div>
@@ -735,7 +746,7 @@ async function enterApp(session){
   $('app').style.display='block';
   // 🔒 โกดัง (warehouse) แก้ได้เฉพาะช่อง "คลังแก้ได้" — ซ่อนปุ่มที่ทำไม่ได้
   if(currentRole === 'warehouse'){
-    ['skuAddBtn','skuImportBtn','skuClearBtn','lockAddRoundBtn','lockEditRoundBtn','lockDelRoundBtn','lockAddItemBtn','wdPullBtn','wdAddBtn']
+    ['skuAddBtn','skuImportBtn','skuClearBtn','lockAddRoundBtn','lockEditRoundBtn','lockDelRoundBtn','lockAddItemBtn','lockCopyBtn','wdPullBtn','wdAddBtn']
       .forEach(id => { const el = $(id); if(el) el.style.display = 'none'; });
   }
   loadJobs();
@@ -1212,6 +1223,39 @@ $('lockDelRoundBtn').addEventListener('click', async () => {
   if(error){ toast('ลบไม่สำเร็จ: '+error.message); return; }
   currentLockId = '';
   toast('ลบรอบเรียบร้อย');
+  loadLocks();
+});
+
+// ---- คัดลอก SKU จากรอบอื่นมาลงรอบนี้ ----
+$('lockCopyBtn').addEventListener('click', () => {
+  if(!currentLockId){ toast('เลือก/สร้างรอบปลายทางก่อน'); return; }
+  const others = allLocks.filter(l => l.id !== currentLockId);
+  if(others.length===0){ toast('ยังไม่มีรอบอื่นให้คัดลอก'); return; }
+  $('lockCopySrc').innerHTML = others.map(l => `<option value="${l.id}">${esc(roundLabel(l))}</option>`).join('');
+  $('lockCopyBg').style.display='flex';
+});
+$('lockCopyClose').addEventListener('click', ()=>$('lockCopyBg').style.display='none');
+$('lockCopyCancel').addEventListener('click', ()=>$('lockCopyBg').style.display='none');
+$('lockCopyBg').addEventListener('click', e=>{ if(e.target===$('lockCopyBg')) $('lockCopyBg').style.display='none'; });
+$('lockCopyConfirm').addEventListener('click', async () => {
+  const srcId = $('lockCopySrc').value;
+  if(!srcId){ toast('เลือกรอบต้นทาง'); return; }
+  const srcItems = allLockItems.filter(it => it.lock_id===srcId);
+  if(srcItems.length===0){ toast('รอบต้นทางยังไม่มี SKU'); return; }
+  const existing = new Set(allLockItems.filter(it=>it.lock_id===currentLockId).map(it=>(it.sku||'').toLowerCase()));
+  const toAdd = srcItems.filter(it => !existing.has((it.sku||'').toLowerCase()));
+  if(toAdd.length===0){ toast('SKU ทั้งหมดมีอยู่ในรอบนี้แล้ว'); return; }
+  let baseSeq = allLockItems.filter(it=>it.lock_id===currentLockId).reduce((mx,it)=>Math.max(mx,it.seq||0),0);
+  const rows = toAdd.map(it => ({
+    lock_id: currentLockId, seq: ++baseSeq,
+    sku: it.sku, name: it.name, locked_qty: it.locked_qty, prepared_qty: it.prepared_qty, note: it.note
+  }));
+  $('lockCopyConfirm').disabled=true;
+  const { error } = await sb.from('stock_lock_items').insert(rows);
+  $('lockCopyConfirm').disabled=false;
+  if(error){ toast('คัดลอกไม่สำเร็จ: '+error.message); return; }
+  $('lockCopyBg').style.display='none';
+  toast(`คัดลอก ${rows.length} SKU มาลงรอบนี้เรียบร้อย`);
   loadLocks();
 });
 
