@@ -9,6 +9,7 @@
 <style>
   :root{
     --navy:#1F3864; --navy-light:#2E75B6; --gold:#C9A84C;
+    --brand:#D81F2C; --brand-bg:#FDE7EA; --navy-deep:#12233F;
     --green:#1E7145; --green-bg:#EAF3DE; --amber:#854F0B; --amber-bg:#FFF3CC;
     --blue:#185FA5; --blue-bg:#E6F1FB; --purple:#534AB7; --purple-bg:#EEEDFE;
     --red:#C00000; --red-bg:#FCE4E4;
@@ -21,12 +22,17 @@
 
   /* ===== LOGIN ===== */
   #loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;
-    background:linear-gradient(135deg,#1F3864 0%,#13233f 100%);padding:20px}
+    background:linear-gradient(135deg,#1B2E4F 0%,#0E1B30 100%);padding:20px;position:relative;overflow:hidden}
   .login-card{background:#fff;border-radius:16px;padding:40px 36px;width:100%;max-width:400px;
-    box-shadow:0 20px 60px rgba(0,0,0,.3)}
+    box-shadow:0 20px 60px rgba(0,0,0,.45);position:relative;z-index:1;border-top:4px solid var(--brand)}
+  /* แถบทแยงแดง (สไตล์แบรนด์) */
+  .stripes{display:inline-flex;gap:4px;height:26px;transform:skewX(-18deg)}
+  .stripes i{width:6px;border-radius:1px;background:var(--brand);display:block}
+  .stripes i:nth-child(1){opacity:.5} .stripes i:nth-child(2){opacity:.8}
   .login-logo{text-align:center;margin-bottom:8px}
+  .login-logo .stripes{margin-bottom:12px}
   .login-logo .brand{font-size:26px;font-weight:700;color:var(--navy);letter-spacing:1px}
-  .login-logo .sub{font-size:12px;color:var(--gold);font-weight:600;letter-spacing:2px;margin-top:4px}
+  .login-logo .sub{font-size:12px;color:var(--brand);font-weight:700;letter-spacing:3px;margin-top:4px}
   .login-title{text-align:center;font-size:15px;color:var(--muted);margin:14px 0 28px}
   .field{margin-bottom:16px}
   .field label{display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:var(--text)}
@@ -43,17 +49,17 @@
   /* ===== APP ===== */
   #app{display:none}
   .topbar{background:var(--navy);padding:0 20px;height:58px;display:flex;align-items:center;
-    justify-content:space-between;position:sticky;top:0;z-index:10}
+    justify-content:space-between;position:sticky;top:0;z-index:10;border-bottom:3px solid var(--brand)}
   .topbar-left{display:flex;align-items:center;gap:10px;min-width:0}
   .topbar-left .brand{color:#fff;font-size:16px;font-weight:700}
   .topbar-left .divider{color:#ffffff44}
-  .topbar-left .page{color:var(--gold);font-size:14px;font-weight:600;white-space:nowrap}
+  .topbar-left .page{color:var(--brand);font-size:14px;font-weight:600;white-space:nowrap}
   .topbar-right{display:flex;align-items:center;gap:12px}
   .rt-status{display:flex;align-items:center;gap:6px;font-size:12px;color:#9FE1CB}
   .rt-dot{width:8px;height:8px;border-radius:50%;background:#1D9E75;animation:pulse 1.8s infinite}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-  .user-pill{background:#C9A84C22;color:var(--gold);font-size:12px;padding:4px 12px;
-    border-radius:20px;border:1px solid #C9A84C55;white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis}
+  .user-pill{background:#D81F2C22;color:var(--brand);font-size:12px;padding:4px 12px;
+    border-radius:20px;border:1px solid #D81F2C55;white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis}
   .logout-btn{background:transparent;border:1px solid #ffffff33;color:#ffffffcc;font-size:13px;
     padding:6px 14px;border-radius:8px}
   .logout-btn:hover{background:#ffffff14}
@@ -168,7 +174,7 @@
   .tabbar{background:#fff;border-bottom:1px solid var(--line);display:flex;gap:4px;padding:0 20px;position:sticky;top:58px;z-index:9}
   .tab-btn{background:none;border:none;padding:13px 18px;font-size:15px;font-weight:600;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-1px}
   .tab-btn:hover{color:var(--navy)}
-  .tab-btn.active{color:var(--navy);border-bottom-color:var(--gold)}
+  .tab-btn.active{color:var(--navy);border-bottom-color:var(--brand)}
   .table-card{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
   .sku-price{color:var(--green);font-weight:600}
   .mv-badge{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:20px;min-width:30px}
@@ -183,7 +189,7 @@
   .lock-foot td{background:#EEF2F7;font-weight:700;border-top:2px solid #475569}
   .mv-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;font-size:13px}
   .cat-tag{display:inline-block;font-size:12px;padding:2px 10px;border-radius:20px;background:var(--navy-bg,#EEF2F7);color:var(--navy);font-weight:600}
-  .cat-head td{background:#1F3864;color:#fff;font-weight:700;font-size:13px;padding:8px 14px;letter-spacing:.3px}
+  .cat-head td{background:#1F3864;color:#fff;font-weight:700;font-size:13px;padding:8px 14px;letter-spacing:.3px;border-left:4px solid var(--brand)}
 </style>
 </head>
 <body>
@@ -192,6 +198,7 @@
 <div id="loginScreen">
   <div class="login-card" id="loginCard">
     <div class="login-logo">
+      <div class="stripes" style="margin-bottom:12px"><i></i><i></i><i></i></div>
       <div style="background:var(--navy);border-radius:12px;padding:16px 20px;margin-bottom:8px">
         <div class="masaru-logo" style="height:34px"></div>
       </div>
@@ -211,6 +218,7 @@
 
   <div class="login-card" id="signupCard" style="display:none">
     <div class="login-logo">
+      <div class="stripes" style="margin-bottom:12px"><i></i><i></i><i></i></div>
       <div style="background:var(--navy);border-radius:12px;padding:16px 20px;margin-bottom:8px">
         <div class="masaru-logo" style="height:34px"></div>
       </div>
@@ -239,6 +247,7 @@
 <div id="app">
   <div class="topbar">
     <div class="topbar-left">
+      <span class="stripes" style="height:20px"><i></i><i></i><i></i></span>
       <span class="masaru-logo" style="display:inline-block;width:120px;height:24px"></span>
       <span class="divider">|</span>
       <span class="page">📦 สต๊อกออกงาน</span>
